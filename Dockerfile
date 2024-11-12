@@ -13,6 +13,7 @@ WORKDIR /app
 COPY . .
 
 # Ejecutar prisma generate durante la construcción
+RUN pnpx prisma migrate dev --name "init"
 RUN pnpm prisma generate
 
 # Construir la aplicación
