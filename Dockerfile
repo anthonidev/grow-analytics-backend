@@ -1,33 +1,48 @@
-# Etapa base
-FROM node:20-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# Utiliza una versión 'slim' de la imagen de Node para reducir el tamaño de la imagen final
+FROM node:20.9.0-slim as builder
+
 WORKDIR /app
+
+# Invalida la caché cuando el archivo package.json cambia
+ARG CACHEBUST=1
+
+# Copia solo los archivos necesarios para instalar dependencias primero, para aprovechar la caché de Docker
 COPY package.json pnpm-lock.yaml ./
+
+# Instala pnpm y las dependencias de manera más eficiente
+RUN npm install -g pnpm
 RUN pnpm install --frozen-lockfile
 
-# Etapa de construcción
-FROM base AS builder
-WORKDIR /app
+# Copia el resto del código fuente
 COPY . .
 
-# Ejecutar prisma generate durante la construcción
-RUN pnpx prisma migrate dev --name "init"
-RUN pnpm prisma generate
+# Configura la variable de entorno en una sola capa
+ENV NODE_ENV=${NODE_ENV}
 
-# Construir la aplicación
-RUN pnpm build
+# Construye la aplicación y verifica el resultado
+RUN pnpm build && echo $?
 
-# Etapa de producción
-FROM node:20-slim AS runner
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable  
-WORKDIR /usr/src/app
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --frozen-lockfile
-COPY --from=builder /app/dist ./dist
+# Genera el cliente de Prisma
+RUN npx prisma generate
 
+# Inicia una nueva etapa para reducir el tamaño de la imagen final
+FROM node:20.9.0-slim
+WORKDIR /app
 
-CMD [ "node", "dist/main" ]
+# Instala OpenSSL y las dependencias necesarias
+RUN apt-get update && apt-get install -y libssl-dev && apt-get clean
+
+# Copia los archivos necesarios desde la etapa de construcción
+COPY --from=builder /app/dist ./dist/
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/prisma ./prisma
+
+# Instala las dependencias en la imagen final
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# Expone el puerto definido en la variable de entorno
+EXPOSE ${PORT}
+
+# Comando para iniciar la aplicación en modo producción
+CMD ["node", "dist/main.js"]
