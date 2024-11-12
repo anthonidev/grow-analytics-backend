@@ -28,7 +28,5 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/dist ./dist
 
-# Copiar el cliente generado de Prisma desde la etapa builder
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 CMD [ "node", "dist/main" ]
