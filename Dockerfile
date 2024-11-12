@@ -11,6 +11,11 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 COPY . .
+
+# Ejecutar prisma generate durante la construcción
+RUN pnpm prisma generate
+
+# Construir la aplicación
 RUN pnpm build
 
 # Etapa de producción
@@ -22,4 +27,8 @@ WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/dist ./dist
+
+# Copiar el cliente generado de Prisma desde la etapa builder
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
 CMD [ "node", "dist/main" ]
