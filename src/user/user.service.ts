@@ -35,7 +35,7 @@ export class UserService {
     })
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { sPass, ...result } = newUser
+    const { contrasena, ...result } = newUser
     return result
   }
 
@@ -49,9 +49,9 @@ export class UserService {
 
     if (search) {
       filters.OR = [
-        { nombre: { contains: search, mode: 'insensitive' } },
-        { apell_paterno: { contains: search, mode: 'insensitive' } },
-        { apell_materno: { contains: search, mode: 'insensitive' } }
+        { nombre: { contains: search } },
+        { apell_paterno: { contains: search } },
+        { apell_materno: { contains: search } }
       ]
     }
 
