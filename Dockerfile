@@ -10,7 +10,7 @@ RUN pnpm install --frozen-lockfile
 # Etapa de construcción
 FROM base AS builder
 WORKDIR /app
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store 
+RUN --id=pnpm,target=/pnpm/store 
 COPY . .
 RUN pnpm build
 
