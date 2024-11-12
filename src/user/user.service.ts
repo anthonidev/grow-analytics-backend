@@ -1,7 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/prisma.service'
 import { hashPassword } from 'src/utils/password.utils'
-import { CreateUserDto } from './dto/user.dto'
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto'
 
 @Injectable()
 export class UserService {
@@ -82,5 +82,42 @@ export class UserService {
       total_pages: totalPages,
       results: users
     }
+  }
+
+  async update(id: number, dto: UpdateUserDto) {
+    const existingUser = await this.prisma.usuario.findUnique({ where: { id } })
+
+    if (!existingUser) {
+      throw new ConflictException('El usuario no existe')
+    }
+    if (dto.correo !== existingUser.correo) {
+      const existingEmail = await this.prisma.usuario.findUnique({ where: { correo: dto.correo } })
+      if (existingEmail) {
+        throw new ConflictException('El correo ya está registrado')
+      }
+    }
+    if (dto.usuario !== existingUser.usuario) {
+      const existingUsername = await this.prisma.usuario.findUnique({
+        where: { usuario: dto.usuario }
+      })
+      if (existingUsername) {
+        throw new ConflictException('El nombre de usuario ya está registrado')
+      }
+    }
+
+    const updatedUser = await this.prisma.usuario.update({
+      where: { id },
+      data: {
+        usuario: dto.usuario,
+        correo: dto.correo,
+        nombre: dto.nombre,
+        apell_paterno: dto.apell_paterno,
+        apell_materno: dto.apell_materno
+      }
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { contrasena, ...result } = updatedUser
+    return result
   }
 }

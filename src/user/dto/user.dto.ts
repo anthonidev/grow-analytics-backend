@@ -37,3 +37,30 @@ export class CreateUserDto {
   @IsNotEmpty()
   tipo_usuario: string
 }
+
+export class UpdateUserDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  usuario: string
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  correo: string
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  nombre: string
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  apell_paterno: string
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  apell_materno: string
+}
