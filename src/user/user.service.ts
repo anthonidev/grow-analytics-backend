@@ -12,12 +12,20 @@ export class UserService {
   }
 
   async create(dto: CreateUserDto) {
-    const existingUser = await this.prisma.usuario.findUnique({
-      where: { usuario: dto.usuario, correo: dto.correo }
+    const existingUserByUsername = await this.prisma.usuario.findUnique({
+      where: { usuario: dto.usuario }
     })
 
-    if (existingUser) {
-      throw new ConflictException('El nombre de usuario o correo ya existe')
+    const existingUserByEmail = await this.prisma.usuario.findUnique({
+      where: { correo: dto.correo }
+    })
+
+    if (existingUserByUsername) {
+      throw new ConflictException('El nombre de usuario ya existe')
+    }
+
+    if (existingUserByEmail) {
+      throw new ConflictException('El correo ya está registrado')
     }
 
     const hashedPassword = await hashPassword(dto.contrasena)
@@ -90,13 +98,17 @@ export class UserService {
     if (!existingUser) {
       throw new ConflictException('El usuario no existe')
     }
-    if (dto.correo !== existingUser.correo) {
+
+    // Verificar si el correo cambia y es diferente al actual
+    if (dto.correo && dto.correo !== existingUser.correo) {
       const existingEmail = await this.prisma.usuario.findUnique({ where: { correo: dto.correo } })
       if (existingEmail) {
         throw new ConflictException('El correo ya está registrado')
       }
     }
-    if (dto.usuario !== existingUser.usuario) {
+
+    // Verificar si el nombre de usuario cambia y es diferente al actual
+    if (dto.usuario && dto.usuario !== existingUser.usuario) {
       const existingUsername = await this.prisma.usuario.findUnique({
         where: { usuario: dto.usuario }
       })
@@ -108,16 +120,28 @@ export class UserService {
     const updatedUser = await this.prisma.usuario.update({
       where: { id },
       data: {
-        usuario: dto.usuario,
-        correo: dto.correo,
-        nombre: dto.nombre,
-        apell_paterno: dto.apell_paterno,
-        apell_materno: dto.apell_materno
+        usuario: dto.usuario ?? existingUser.usuario,
+        correo: dto.correo ?? existingUser.correo,
+        nombre: dto.nombre ?? existingUser.nombre,
+        apell_paterno: dto.apell_paterno ?? existingUser.apell_paterno,
+        apell_materno: dto.apell_materno ?? existingUser.apell_materno
       }
     })
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { contrasena, ...result } = updatedUser
     return result
+  }
+
+  async delete(id: number) {
+    const existingUser = await this.prisma.usuario.findUnique({ where: { id } })
+
+    if (!existingUser) {
+      throw new ConflictException('El usuario no existe')
+    }
+
+    await this.prisma.usuario.delete({ where: { id } })
+
+    return { message: 'Usuario eliminado' }
   }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Put, Query, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { JwtGuard } from 'src/auth/guards/jwt.guard'
 import { UserService } from './user.service'
@@ -17,8 +17,13 @@ export class UserController {
   }
 
   @ApiOperation({ summary: 'Actualizar un usuario' })
-  @Get('update/:id')
+  @Put('update/:id')
   async update(@Body() dto: UpdateUserDto, @Param('id') id: number) {
     return await this.userService.update(+id, dto)
+  }
+  @ApiOperation({ summary: 'Eliminar un usuario' })
+  @Delete('delete/:id')
+  async delete(@Param('id') id: number) {
+    return await this.userService.delete(+id)
   }
 }
